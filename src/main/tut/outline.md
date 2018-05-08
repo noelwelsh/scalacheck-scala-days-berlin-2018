@@ -87,10 +87,10 @@ Writing tests is so... boring. And repetitive. And often, in hindsight, rather a
  - stateful testing
    - problem: state is hidden from the outside
     - e.g., the user has to enter the correct PIN code before any money could be withdrawn from the ATM
-    ```tut:book
+    ```scala
     // authorized state is hidden from the outside!
     def withdraw(amount: Amount): Either[Unauthorized, Unit]
-    ```tut
+    ```
   - solution: model state explicitly in the test, check the state after (generated!) commands are run
   ```
    SUT      State

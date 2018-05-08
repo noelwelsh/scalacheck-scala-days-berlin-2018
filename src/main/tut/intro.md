@@ -2,12 +2,11 @@
 
 ## A Testing Challenge
 
-Below is the definition of the absolute value function defined on `Int`. 
+Below is the definition of the absolute value function defined on `Int`.
 
 ```tut:silent:book
 def abs(x: Int): Int =
-  if(x < 0) -x
-  else x
+  if (x < 0) -x else x
 ```
 
 What invariants do you think should hold for this method? A very simple invariant, which is enforced by the compiler, is that given an `Int` the method returns an `Int`. What else?
@@ -22,7 +21,7 @@ The main invariant of `abs` is that the output should always be positive. There 
 -Int.MinValue
 ```
 
-This is fairly subtle point which relies on a lot of background knowledge. There is a good chance you uncovered it in this exercise, as the problem is very small and testing is the focus, but you can imagine how subtleties like this are overlooked in real project. In fact this example comes from a real and widely used project: Apache Kafka. It appears they [first noticed this issue][abs-introduced] in 2012, but their first fix [had a bug][kafka-1469] that was only fixed two years later! 
+This is fairly subtle point which relies on a lot of background knowledge. There is a good chance you uncovered it in this exercise, as the problem is very small and testing is the focus, but you can imagine how subtleties like this are overlooked in real project. In fact this example comes from a real and widely used project: Apache Kafka. It appears they [first noticed this issue][abs-introduced] in 2012, but their first fix [had a bug][kafka-1469] that was only fixed two years later!
 
 [abs-introduced]: https://github.com/apache/kafka/commit/d1a22b2e3b59c2cf00adabd75d29ddd53938bacb
 [kafka-1469]: https://issues.apache.org/jira/browse/KAFKA-1469
