@@ -1,4 +1,4 @@
-# Intergation with Other Frameworks
+# Integration with Other Frameworks
 
 ## ScalaTest
 
