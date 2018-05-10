@@ -13,7 +13,7 @@ quantified* property: the assertion should be true for *all*
 In ScalaCheck, we express universally quantified properties with the
 `Prop.forAll` method:
 
-```tut:book
+```tut:silent:book
 import org.scalacheck.Prop.forAll
 
 val invertability = forAll { (x: Int) => x + -x == 0 }
@@ -43,11 +43,25 @@ import org.scalacheck._
 Test.check(Test.Parameters.default, invertability)
 ```
 
-(You can use `Test.check` in a REPL; later we will detail the usual practice
+(You can use `Test.check` in the console; later we will detail the usual practice
 of running the property tests via `sbt`)
 
-*what actually happened*
-*fields of a `Result`*
+You probably saw output similar to
+
+```scala
+// res0: org.scalacheck.Test.Result = Result(Passed,100,0,Map(),101)
+```
+
+The `Result` represents the result of ScalaCheck running the test. The first
+field, with value `Passed`, tells us that the test passed. The next parameter,
+`100`, is interesting. This tells us how many test cases ScalaCheck generated
+for us. A third field, `0`, is the number of test cases that were generated but
+discarded because they didn't meet a precondition. Being zero it indicates that
+no cases were discarded. Complex preconditions can cause many cases to be
+discarded, which in turn can lead to test cases that take a long time to run or
+ScalaCheck giving up on generating cases. The final two fields are not
+particularly important for our situation.
+
 
 ## Generators: Producing Values to Test
 
@@ -62,16 +76,19 @@ sealed abstract class Gen[+T] {
 }
 ```
 
-At its heart, `Gen` produces sample values of a given type.
+At its heart, `Gen` produces sample values of a given type. The result of
+`sample` is an `Option[T]` because, as we've just seen above, the generator may
+fail to generate a sample.
 
-*why is the return value of `sample` wrapped in an `Option`?*
 
-ScalaCheck comes with many, many generators out-of-the-box:
+ScalaCheck comes with many, many generators out-of-the-box, which you'll find on
+the `Gen` companion object.
 
 ```tut:silent:book
-Gen.alphaStr     // `String` values like "abc", etc.
-Gen.numStr       // numeric `String` values: "123", etc.
-Gen.posNum[Int]  // positive numbers: 42, etc.
+Gen.alphaStr    // `String` values like "abc", etc.
+Gen.numStr      // numeric `String` values: "123", etc.
+Gen.posNum[Int] // positive numbers: 42, etc.
+Gen.const(1)    // always generates the given value
 
 Gen.choose(0, 9)         // pick any number in a range, inclusive
 Gen.oneOf('a', 'b', 'c') // pick any of these values
@@ -81,20 +98,71 @@ There are many more.
 
 Let's `sample` some values from these generators:
 
+```tut:book:silent
+// A useful utility to generate samples from a Gen
+def sample[A](n: Int)(gen: Gen[A]): List[Option[A]] =
+  List.fill(n)(gen.sample)
+```
+
 ```tut:book
-List.fill(3)(Gen.alphaStr.sample)
-List.fill(3)(Gen.numStr.sample)
-List.fill(3)(Gen.posNum[Int].sample)
-List.fill(3)(Gen.choose(0, 9).sample)
-List.fill(3)(Gen.oneOf('a', 'b', 'c').sample)
+sample(3)(Gen.alphaStr)
+sample(3)(Gen.numStr)
+sample(3)(Gen.posNum[Int])
+sample(3)(Gen.const(1))
+sample(3)(Gen.choose(0, 9))
+sample(3)(Gen.oneOf('a', 'b', 'c'))
 ```
 
 ## Generator combinators
 
+There are many ways to combine generators to create new ones.
+
+Generators are monads, meaning they have `map` and `flatMap` methods.
+(`Gen.const` is the `pure` method that rounds out the monad interface.) We can
+use these in the usual way to transform generators.
+
+
+For example, we can generate the even positive integers by `mapping` the
+positive integers.
+
+```tut:book:
+// Generate even positive integers
+sample(3)(Gen.posNum[Int].map(x => x * 2))
+```
+
+With `flatMap` we can do more complicated transforms, such as using our input to
+choose a generator.
+
+
+```tut:book:
+sample(3)(Gen.choose(0,2).flatMap{ 
+  case 0 => Gen.alphaStr
+  case 1 => Gen.numStr
+  case _ => Gen.const("Hi!")
+})
+```
+
+These kind of switching is so common that ScalaCheck provides a number of
+combinators to make it easy. We've already seen `oneOf` above. It also works
+with generators, so we could have also written
+
+```tut:book:
+sample(3)(Gen.oneOf(Gen.alphaStr, Gen.numStr, Gen.const("Hi!")))
+```
+
+Using `oneOf` each generator is chosen with equal probability. For more
+complicated choices we can use `frequency`, where we give each generator a
+weight. Generators are chosen in proportion to their weight.
+
 ```tut:book
 // generate a 'b' twice as much as an 'a', a 'c' three times as much
-List.fill(3)(Gen.frequency(1 -> 'a', 2 -> 'b', 3 -> 'c').sample)
+sample(3)(Gen.frequency(1 -> 'a', 2 -> 'b', 3 -> 'c'))
+```
 
+Another common use case is to generate a container of a certain size. The
+`containerOf` and `containerOfN` methods do this.
+
+```tut:book:
 // generate a container whose elements come from another `Gen`
 List.fill(3)(Gen.containerOf[List, Int](Gen.oneOf(1, 3, 5)).sample)
 
@@ -102,7 +170,60 @@ List.fill(3)(Gen.containerOf[List, Int](Gen.oneOf(1, 3, 5)).sample)
 List.fill(3)(Gen.containerOfN[Seq, String](3, Gen.alphaStr).sample)
 ```
 
-## Generator composition
+
+## Expressing Preconditions
+
+The final methods on `Gen` that we will look at are those for expressing
+preconditions. The main method is `suchThat`, or it's direct synonym
+`filter`.
+
+Above we expressed even positive integers as
+
+```tut:book:
+// Generate even positive integers
+sample(3)(Gen.posNum[Int].map(x => x * 2))
+```
+
+We could alternatively express it as
+
+```tut:silent:book:
+sample(3)(Gen.posNum[Int].suchThat(_ % 2 == 0))
+// The exact equivalent using filter
+sample(3)(Gen.posNum[Int].filter(_ % 2 == 0))
+```
+
+What's the difference between the two? Think about this before you read on.
+
+The first way of defining the even positive integers suffers from overflow, and can end up generating negative numbers! The second ends up filtering out half of the numbers generated from `Gen.psNum`, so it is less efficient (though correct!)
+
+
+
+### Exercises
+
+Now we've explored the basics of `Gen`, it's time for you to get some practice using the API.
+
+#### Finger Exercisess
+
+These exercises are all about learning to use the API effectively.
+
+- Generate a `String` of lowercase alphabetic characters
+- Generate a `String` of numeric characters
+- Generate integers between 100 and 200, inclusive
+- Generate strings that start with one of "a", "b", or "c"
+- Generate odd integers
+- Generate a list of between 3 and 5 positive integers
+
+#### More Complicated Situations
+
+Create a `Gen[User]`, where `User` is
+
+```tut:silent:book:
+final case class User(name: String, age: Int, email: String)
+```
+
+Make justifiable decisions for the choice of generators for the fields.
+
+
 
 ## Arbitrary
 
