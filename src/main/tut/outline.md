@@ -39,6 +39,7 @@ Writing tests is so... boring. And repetitive. And often, in hindsight, rather a
     - associativity
       - "different paths, same destination"
       - `h ∘ (g ∘ f) = (h ∘ g) ∘ f`
+      - [associativity tikz diagram](https://tikzcd.yichuanshen.de/#eyJub2RlcyI6W3sicG9zaXRpb24iOlswLDBdLCJ2YWx1ZSI6IkEifSx7InBvc2l0aW9uIjpbMSwwXSwidmFsdWUiOiJCIn0seyJwb3NpdGlvbiI6WzIsMF0sInZhbHVlIjoiQyJ9LHsicG9zaXRpb24iOlszLDBdLCJ2YWx1ZSI6IkQifV0sImVkZ2VzIjpbeyJmcm9tIjoxLCJ0byI6MiwidmFsdWUiOiJnIiwiYmVuZCI6MCwibGluZSI6InNvbGlkIn0seyJmcm9tIjowLCJ0byI6MiwiYmVuZCI6MzAsImxhYmVsUG9zaXRpb24iOiJyaWdodCIsInZhbHVlIjoiZyBcXGNpcmMgZiJ9LHsiZnJvbSI6MiwidG8iOjMsInZhbHVlIjoiaCJ9LHsiZnJvbSI6MCwidG8iOjEsInZhbHVlIjoiZiIsImxpbmUiOiJzb2xpZCIsInRhaWwiOiJub25lIn0seyJmcm9tIjoxLCJ0byI6MywiYmVuZCI6LTMwLCJ2YWx1ZSI6ImggXFxjaXJjIGcifSx7ImZyb20iOjAsInRvIjozLCJiZW5kIjozMCwidmFsdWUiOiIoaCBcXGNpcmMgZykgXFxjaXJjIGYgPSBoIFxcY2lyYyAoZyBcXGNpcmMgZikiLCJsYWJlbFBvc2l0aW9uIjoibGVmdCJ9XX0=)
     - commutativity
       - "different paths, same destination"
       - `f ∘ g = g ∘ f`
