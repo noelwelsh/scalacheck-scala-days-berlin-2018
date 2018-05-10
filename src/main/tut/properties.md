@@ -28,6 +28,8 @@ There are two big points we can take away from this exercise.
 
 The first is about the nature of properties. The properties given above will apply in many cases, and we can use the list above as a reference for discovering properties of other systems. More generally the properties are mostly kinds of *symmetries*---different arrangements of additions that lead to the same result. We can use this more general idea to find properties by looking for symmetries in our system under test.
 
+*also describe properties as (universally, etc.) quantified assertions (boolean formulas?)*
+
 The second big point is that sometimes properties have *preconditions*, as we saw for invertibility on `Int`. A precondition specifies an additional restriction on the input. Only inputs that meet this restriction will be considered when testing the property.
 
 ## More Properties
