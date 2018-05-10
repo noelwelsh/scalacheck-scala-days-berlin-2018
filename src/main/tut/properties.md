@@ -45,12 +45,56 @@ _Any more?_
 
 ## Types and Tests
 
-Types and tests
-- types prove for all input
-  - but
-    - expensive to prove all properties
-    - compiler allows us to cheat: partial functions
-- manual tests proves for a few input
-  - but
-    - we can prove complex properties we cannot express in types
-- property based testing bridges the gap: complex properties with many more inputs than we could manually create
+There is a long-standing debate in the programming community about the
+relative merits of types versus tests in the context of reducing errors. On
+one hand, a type is a proof of some property *for all* inputs, and the compiler
+enforces this. For example, if you have a function that returns a value
+of type `Boolean`, it *must* be the value `true` or the value `false`, and
+*cannot* be anything else. And the compiler will reject your code if you
+return any value that is not a `Boolean`. This may seem obvious, but it is also
+quite amazing: the compiler has reduced the universe of possible errors from
+*any* value of *any* type to just *two* possible values.
+
+```tut:book
+def isSomethingVeryComplicated(s: String): Boolean =
+  if (???) true else false
+// ^
+// |
+// `-- Compiles, oh yeah!
+```
+
+```tut:book:fail
+def isSomethingVeryComplicated(s: String): Boolean =
+  "I have no idea what I'm doing, I'm a dog"
+// ^
+// |
+// `-- You saved me! You're the best, compiler!
+//
+//     Sincerely, me.
+```
+
+On the other hand, not all properties can be expressed by types, so for
+these scenarios we can write tests. But it takes effort: not only do we have to express
+our invariants, we need to provide inputs to test, and often we fail to be
+sufficiently clever in our choices of inputs. (Or we're simply lazy and only
+test the first thing that comes to mind.)
+
+To summarize:
+
+- **Types**
+  - *Pros*: correct for all inputs; compiler-checked
+  - *Cons*: don't handle all properties; the compiler can be annoying
+- **Tests**
+  - *Pros*: can prove complex properties we cannot express in types
+  - *Cons*: more effort, more boilerplate; test inputs are cherry-picked; can only prove the presence of bugs
+
+All is not lost though. Property-based testing bridges the gap: we can
+check complex properties with many more inputs than we could manually
+create ourselves. We do this by writing little programs that produce
+(valid) test data.
+
+### Choice Quotes
+
+"Program testing can be used to show the presence of bugs, but never to show their absence!" - Edsger Dijkstra
+
+"Tests prove incorrectness and provide evidence of correctness. Types prove correctness and provide evidence of incorrectness." - [@jdegoes](https://twitter.com/jdegoes/status/924412114772549632)
