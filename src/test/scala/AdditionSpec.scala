@@ -2,6 +2,7 @@ import org.scalacheck._
 import org.scalacheck.Prop.forAll
 
 object AdditionSpecification extends Properties("Addition") {
+
   property("identity") = forAll { (x: Int) => x + 0 == 0 }
 
   property("associativity") = forAll { (x: Int, y: Int, z: Int) =>
@@ -12,5 +13,5 @@ object AdditionSpecification extends Properties("Addition") {
     x + y == y + x
   }
 
-  property("invertibility") = forAll { (x: Int) => x + 0 == 0 }
+  property("invertibility") = forAll { (x: Int) => x + -x == 0 }
 }
