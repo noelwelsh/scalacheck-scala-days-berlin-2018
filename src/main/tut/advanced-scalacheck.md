@@ -1,5 +1,7 @@
 # Advanced ScalaCheck
 
+Discarding and its issues.
+
 Shrinking and its stupidity. Turning it off.
 
 Labels and other stupid symbolic operators
