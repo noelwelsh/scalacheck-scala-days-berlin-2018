@@ -11,7 +11,7 @@ In ScalaCheck, we express universally quantified properties with the
 ```tut:silent:book
 import org.scalacheck.Prop.forAll
 
-val invertability = forAll { (x: Int) => x + -x == 0 }
+val invertibility = forAll { (x: Int) => x + -x == 0 }
 ```
 
 (We often `import` the `Prop.forAll` method directly into scope, for brevity.)
@@ -24,7 +24,7 @@ a property. Here we passed an anonymous function that takes an `Int` named
 Let's reformat and annotate the expression to highlight its parts:
 
 ```tut:silent:book
-val invertability =     // the property
+val invertibility =     // the property
   forAll { (x: Int) =>  // universal quantification over a type
     x + -x == 0         // the assertion
   }
@@ -35,7 +35,7 @@ Let's test our property:
 ```tut:book
 import org.scalacheck._
 
-Test.check(Test.Parameters.default, invertability)
+Test.check(Test.Parameters.default, invertibility)
 ```
 
 (You can use `Test.check` in the console; later we will detail the usual practice
