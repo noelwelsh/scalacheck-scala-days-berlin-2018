@@ -52,13 +52,22 @@ Content-Type: application/json; charset=UTF-8
 Dates are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Dates) formatted (`YYYY-MM-DD`).
 
 
-## Property: Read Your Writes
-
-
 ## Property: Request Validation
 
+* `POST /todos?value=get+milk&due=2018-05-13`
+  - `value` parameter is required
+  - `due` parameter is optional and must be a ISO 8601 date
+
+
+## Property: Read Your Writes
+
+* `POST /todos` returns `201 Created`, `GET <Host><Location>` returns correct JSON for initial request parameters
 
 ## Property: Authentication
+
+Authentication is implication:
+
+* `Authentication` header present and value is valid
 
 `403 Forbidden`
 
@@ -67,6 +76,10 @@ See also: [Github API: Authentication](https://developer.github.com/v3/#authenti
 
 ## Property: Idempotent POSTs
 
+More than one `POST /todos` request with the same `Idempotency-Key` header
+will always return the same `Location` header.
+
+The same key can't be reused with different parameters.
 
 References:
 
@@ -78,13 +91,18 @@ References:
 
 ## Property: Pagination
 
-> Requests that return multiple items will be paginated to 30 items by default. You can specify further pages with the ?page parameter. For some resources, you can also set a custom page size up to 100 with the ?per_page parameter. Note that for technical reasons not all endpoints respect the ?per_page parameter, see events for example.
->
-> Note that page numbering is 1-based and that omitting the ?page parameter will return the first page.
+* `page`: optional, must be > 0, defaults to 1
+* `per_page`: optional, must be > 0, defaults to 30
 
-From [GitHub API: Pagination](https://developer.github.com/v3/#pagination).
+Invariants:
+
+* Given n items, a response will contain `min(n, per_page)` items
+* Responses will contain a `first` link if `page` > 1
+* Responses will contain a `last` link if ...
+
+See also [GitHub API: Pagination](https://developer.github.com/v3/#pagination).
 
 
 ## Property: Filtering
 
-
+* `due_by=<ISO8601-date>` query parameter: return only those items who have a `due` property <= `due_by`
