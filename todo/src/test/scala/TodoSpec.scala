@@ -1,30 +1,23 @@
 package io.underscore.testing.todo
 
 import cats.effect.IO
+import io.circe.Json
 import org.http4s._
+import org.http4s.circe._
 import org.http4s.implicits._
-import org.specs2.matcher.MatchResult
+import org.scalacheck._
 
 // TODO: use scalatest
-class TodoSpec extends org.specs2.mutable.Specification {
-
-  "HelloWorld" >> {
-    "return 200" >> {
-      uriReturns200()
-    }
-    "return hello world" >> {
-      uriReturnsHelloWorld()
-    }
-  }
+class TodoSpec extends Properties("TodoService") {
 
   private[this] val retTodo: Response[IO] = {
-    val getHW = Request[IO](Method.GET, Uri.uri("/hello/world"))
-    new TodoService[IO].service.orNotFound(getHW).unsafeRunSync()
+    val todos = Request[IO](Method.GET, Uri.uri("/todos"))
+    new TodoService[IO].service.orNotFound(todos).unsafeRunSync()
   }
 
-  private[this] def uriReturns200(): MatchResult[Status] =
-    retTodo.status must beEqualTo(Status.Ok)
+  property("/todos returns 200") =
+    retTodo.status == Status.Ok
 
-  private[this] def uriReturnsHelloWorld(): MatchResult[String] =
-    retTodo.as[String].unsafeRunSync() must beEqualTo("{\"message\":\"Hello, world\"}")
+  property("/todos returns JSON []") =
+    retTodo.as[Json].unsafeRunSync() == Json.arr()
 }
