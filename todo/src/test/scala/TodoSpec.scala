@@ -4,7 +4,10 @@ import cats._
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import io.circe.Json
+import io.circe._
+import io.circe.generic.semiauto._
+import io.circe.java8.time._
+import io.circe.syntax._
 import java.time.LocalDate
 import org.http4s._
 import org.http4s.circe._
@@ -13,6 +16,8 @@ import org.scalacheck._
 import org.scalacheck.Prop._
 
 class TodoSpec extends Properties("TodoService") {
+
+  import TodoRequest._
 
   property("GET /todos returns 200") =
     run(TodoRequest.GetTodos.toRequest)(newService).status == Status.Ok
@@ -30,7 +35,12 @@ class TodoSpec extends Properties("TodoService") {
         } yield (postResponse, location, getResponse)
 
       val (postResponse, location, getResponse) = r.run(newService)
-      s"$post\n$postResponse\n$location\n$getResponse" |: getResponse.status == Status.Ok
+      s""">>> $post
+         |<<< $postResponse
+         |>>> $location
+         |<<< $getResponse""".stripMargin |:
+        getResponse.status == Status.Ok &&
+        getResponse.as[TodoRequest.PostTodo].unsafeRunSync() == post
     }
 
   def newService() = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
@@ -70,4 +80,7 @@ object TodoRequest {
   case class PostTodo(value: String, due: Option[LocalDate]) extends TodoRequest
   case object GetTodos extends TodoRequest
   case class GetTodo(id: Long) extends TodoRequest
+
+  implicit def postDecoder: Decoder[PostTodo] = deriveDecoder[PostTodo]
+  implicit val postEntityDecoder: EntityDecoder[IO, PostTodo] = jsonOf[IO, TodoRequest.PostTodo]
 }
