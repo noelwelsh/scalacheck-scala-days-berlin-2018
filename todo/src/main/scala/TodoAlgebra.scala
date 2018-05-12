@@ -1,6 +1,7 @@
 package io.underscore.testing.todo
 
 import cats._
+import cats.implicits._
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import io.circe.java8.time._
@@ -50,3 +51,11 @@ object TodoAlgebra {
       Applicative[F].pure(items.lift(id.toLong.toInt - 1))
   }
 }
+
+object Bugs {
+  class ReturnsWrongLocation[F[_] : Applicative] extends TodoAlgebra.InMemoryTodo[F] {
+    override def append(item: Item): F[ItemId] =
+      super.append(item) map (_ + 5)
+  }
+}
+
