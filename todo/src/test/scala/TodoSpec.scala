@@ -20,22 +20,23 @@ class TodoSpec extends Properties("TodoService") {
   property("GET /todos returns JSON []") =
     run(TodoRequest.GetTodos.toRequest)(newService).as[Json].unsafeRunSync() == Json.arr()
 
-  property("read your writes") = forAll(genPostTodo) { (post: TodoRequest.PostTodo) =>
-    val r =
-      for {
-        postResponse <- Reader(run(post.toRequest))
-        location = postResponse.headers.get(headers.Location).get.uri
-        getResponse <- Reader(run(Request[IO](Method.GET, location)))
-      } yield (postResponse, location, getResponse)
+  property("read your writes") =
+    forAll(genPostTodo) { (post: TodoRequest.PostTodo) =>
+      val r =
+        for {
+          postResponse <- run(post.toRequest)
+          location = postResponse.headers.get(headers.Location).get.uri
+          getResponse <- run(Request[IO](Method.GET, location))
+        } yield (postResponse, location, getResponse)
 
-    val (postResponse, location, getResponse) = r.run(newService)
-    s"$post\n$postResponse\n$location\n$getResponse" |: getResponse == null
-  }
+      val (postResponse, location, getResponse) = r.run(newService)
+      s"$post\n$postResponse\n$location\n$getResponse" |: getResponse.status == Status.Ok
+    }
 
   def newService() = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
 
-  def run(request: Request[IO]): HttpService[IO] => Response[IO] =
-    service => service.orNotFound(request).unsafeRunSync()
+  def run(request: Request[IO]): Reader[HttpService[IO], Response[IO]] =
+    Reader(service => service.orNotFound(request).unsafeRunSync())
 
   val genPostTodo: Gen[TodoRequest.PostTodo] =
     for {
