@@ -27,10 +27,15 @@ class TodoSpec extends Properties("TodoService") {
 
   property("read your writes") =
     forAll(genPostTodo) { (post: TodoRequest.PostTodo) =>
-      val r =
+      // TODO: maybe Writer to collect debug info
+      val r: Reader[HttpService[IO], (Response[IO], Uri, Response[IO])] =
         for {
           postResponse <- run(post.toRequest)
+          // TODO: don't just blow up
           location = postResponse.headers.get(headers.Location).get.uri
+          // TODO: assert that returned Location matches the /todos/{id} endpoint, maybe URI Template thing
+
+          // actually fetch the content at the Location URI to test the response
           getResponse <- run(Request[IO](Method.GET, location))
         } yield (postResponse, location, getResponse)
 
