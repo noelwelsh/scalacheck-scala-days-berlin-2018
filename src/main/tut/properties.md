@@ -55,22 +55,18 @@ return any value that is not a `Boolean`. This may seem obvious, but it is also
 quite amazing: the compiler has reduced the universe of possible errors from
 *any* value of *any* type to just *two* possible values.
 
+This compiles:
+
 ```tut:book
 def isSomethingVeryComplicated(s: String): Boolean =
   if (???) true else false
-// ^
-// |
-// `-- Compiles, oh yeah!
 ```
+
+But this doesn't:
 
 ```tut:book:fail
 def isSomethingVeryComplicated(s: String): Boolean =
   "I have no idea what I'm doing, I'm a dog"
-// ^
-// |
-// `-- You saved me! You're the best, compiler!
-//
-//     Sincerely, me.
 ```
 
 On the other hand, not all properties can be expressed by types, so for
