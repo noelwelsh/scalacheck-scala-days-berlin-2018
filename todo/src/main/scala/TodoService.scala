@@ -27,8 +27,8 @@ class TodoService[F[_]: Effect](alg: TodoAlgebra[F]) extends Http4sDsl[F] {
 
             case (Some(Seq(value, _*)), None) =>
               for {
-                _ <- alg.append(alg.item(value, None))
-                response <- Created(Json.fromString(s"/todos/1: value=$value"))
+                id <- alg.append(alg.item(value, None))
+                response <- Created().putHeaders(headers.Location(Uri.uri("/todos") / id.toString))
               } yield response
 
             case _ =>
