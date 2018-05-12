@@ -20,38 +20,60 @@ class TodoSpec extends Properties("TodoService") {
   import TodoRequest._
 
   property("GET /todos returns 200") =
-    run(TodoRequest.GetTodos.toRequest)(newService).status == Status.Ok
+    run(TodoRequest.GetTodos.toRequest)
+      .runEmptyA(newService)
+      .value
+      .status == Status.Ok
 
   property("GET /todos returns JSON []") =
-    run(TodoRequest.GetTodos.toRequest)(newService).as[Json].unsafeRunSync() == Json.arr()
+    run(TodoRequest.GetTodos.toRequest)
+      .runEmptyA(newService)
+      .value
+      .as[Json].unsafeRunSync() == Json.arr()
 
   property("read your writes") =
     forAll(genPostTodo) { (post: TodoRequest.PostTodo) =>
-      // TODO: maybe Writer to collect debug info
-      val r: Reader[HttpService[IO], (Response[IO], Uri, Response[IO])] =
+      val r =
         for {
           postResponse <- run(post.toRequest)
-          // TODO: don't just blow up
-          location = postResponse.headers.get(headers.Location).get.uri
+
+          location = postResponse.headers.get(headers.Location).get.uri // TODO: don't just blow up
+
           // TODO: assert that returned Location matches the /todos/{id} endpoint, maybe URI Template thing
 
           // actually fetch the content at the Location URI to test the response
           getResponse <- run(Request[IO](Method.GET, location))
-        } yield (postResponse, location, getResponse)
+        } yield getResponse
 
-      val (postResponse, location, getResponse) = r.run(newService)
-      s""">>> $post
-         |<<< $postResponse
-         |>>> $location
-         |<<< $getResponse""".stripMargin |:
+      val (log, _, getResponse) = r.runEmpty(newService).value
+      val entity = getResponse.as[TodoRequest.PostTodo].unsafeRunSync()
+
+      Log.show(log) |:
         getResponse.status == Status.Ok &&
-        getResponse.as[TodoRequest.PostTodo].unsafeRunSync() == post
+        entity == post
     }
 
   def newService() = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
 
-  def run(request: Request[IO]): Reader[HttpService[IO], Response[IO]] =
-    Reader(service => service.orNotFound(request).unsafeRunSync())
+  /** Computation that requires a `HttpService` and also logs the request and response. We keep no other state. */
+  type Http4sTest[F[_], A] = ReaderWriterState[HttpService[F], Log[F], Unit, A]
+
+  /** We log the request/response pairs. */
+  type Log[F[_]] = List[(Request[F], Response[F])]
+
+  object Log {
+    // Pretty-print the log.
+    def show[F[_]](log: Log[F]): String =
+      log.flatMap { case (req, res) => List(s">>> $req", s"<<< $res") }
+        .mkString("\n")
+  }
+
+  def run(request: Request[IO]): Http4sTest[IO, Response[IO]] =
+    for {
+      service <- ReaderWriterState.ask[HttpService[IO], Log[IO], Unit]
+      response = service.orNotFound(request).unsafeRunSync()
+      _ <- ReaderWriterState.tell(List(request -> response))
+    } yield response
 
   val genPostTodo: Gen[TodoRequest.PostTodo] =
     for {
