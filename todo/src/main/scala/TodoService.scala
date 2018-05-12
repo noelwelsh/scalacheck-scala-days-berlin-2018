@@ -22,13 +22,13 @@ class TodoService[F[_]: Effect](alg: TodoAlgebra[F]) extends Http4sDsl[F] {
             case (Some(Seq(value, _*)), Some(Seq(DueMatcher(due), _*))) =>
               for {
                 id <- alg.append(alg.item(value, Some(due)))
-                response <- Created().putHeaders(headers.Location(Uri.uri("/todos") / id.toString))
-              } yield response
+                response <- Created(headers.Location(Uri.uri("/todos") / id.toString))
+              } yield response.putHeaders()
 
             case (Some(Seq(value, _*)), None) =>
               for {
                 id <- alg.append(alg.item(value, None))
-                response <- Created().putHeaders(headers.Location(Uri.uri("/todos") / id.toString))
+                response <- Created(headers.Location(Uri.uri("/todos") / id.toString))
               } yield response
 
             case _ =>
@@ -38,7 +38,10 @@ class TodoService[F[_]: Effect](alg: TodoAlgebra[F]) extends Http4sDsl[F] {
         }
 
       case GET -> Root / "todos" =>
-        alg.getItems flatMap (items => Ok(items.asJson))
+        for {
+          items <- alg.getItems
+          response <- Ok(items.asJson)
+        } yield response
 
       case GET -> Root / "todos" / LongVar(id) =>
         for {
