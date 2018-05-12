@@ -14,12 +14,16 @@ trait TodoAlgebra[F[_]] {
 
   implicit def encoder: Encoder[Item]
 
+  /** Construct an `Item`. */
   def item(value: String, due: Option[LocalDate]): Item
 
+  /** Append an `Item` to the list. */
   def append(item: Item): F[ItemId]
 
+  /** Get all the `Item`s in the list. */
   def getItems(): F[List[Item]]
 
+  /** Find an `Item` by its `ItemId`. */
   def find(id: ItemId): F[Option[Item]]
 }
 
