@@ -23,6 +23,7 @@ lazy val todo = (project in file("."))
       "-explaintypes",                     // Explain type errors in more detail.
       "-feature",
       "-language:higherKinds"
-    )
+    ),
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
   )
 
