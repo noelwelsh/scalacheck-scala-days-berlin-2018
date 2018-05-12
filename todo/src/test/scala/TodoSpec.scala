@@ -82,6 +82,7 @@ class TodoSpec extends Properties("TodoService") {
     } yield TodoRequest.PostTodo(value, due)
 }
 
+/** Algebraic data type representing the various kinds of requests we can make to a `TodoService`. */
 sealed trait TodoRequest {
   def toRequest: Request[IO] =
     this match {

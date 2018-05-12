@@ -47,6 +47,40 @@ Content-Type: application/json; charset=UTF-8
 
 Dates are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Dates) formatted (`YYYY-MM-DD`).
 
+### `TodoService.scala`
+
+We've created an example [http4s](https://http4s.org/) service, complete with bugs, for you to test.
+Here's an example of making requests and getting (non-buggy) responses:
+
+```tut:silent:book
+import cats.effect._
+import io.circe.Json
+import io.underscore.testing.todo._
+import java.time.LocalDate
+import org.http4s._
+import org.http4s.circe._
+import org.http4s.implicits._
+```
+
+```tut:book
+val service = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
+
+val post = TodoRequest.PostTodo("get milk", Some(LocalDate.of(2018, 5, 18))).toRequest
+
+// Alternatively, you can "manually" create a http4s request like this:
+//val post = Request[IO](Method.POST, Uri.uri("/todos")).withBody(UrlForm(Map("value" -> Seq("get milk"), "due" -> Seq("2018-05-13")))).unsafeRunSync()
+
+service.orNotFound(post).unsafeRunSync()
+
+val get =
+  for {
+    response <- service.orNotFound(TodoRequest.GetTodos.toRequest)
+    json <- response.as[Json]
+  } yield (response, json)
+
+get.unsafeRunSync()
+```
+
 
 ## Property: Request Validation
 
