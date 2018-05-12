@@ -8,10 +8,6 @@ Host: localhost:8080
 
 HTTP/1.1 201 Created
 Location: /todos/68
-Content-Type: application/json; charset=UTF-8
-...
-
-"/todos/68"
 ```
 
 ```
