@@ -2,9 +2,10 @@
 
 In this section we discuss some issues that go beyond the basics of ScalaCheck usage.
 
+
 ## Discarding
 
-We've seen how we can express preconditions by filtering a generator. This can have some issues. Consider the following example, creating a generating to produce strings beginning with "henry".
+We've seen how we can express preconditions by filtering a generator. This can have some issues. Consider the following example, creating a generator to produce strings beginning with "henry".
 
 ```tut:silent:book
 import org.scalacheck._
@@ -12,7 +13,7 @@ import org.scalacheck._
 val henry = Gen.alphaStr.filter(_.startsWith("henry"))
 ```
 
-When we run a test using this generator we see that no tests were generated.
+When we run a test using this generator we see that no test data was generated.
 
 ```tut:book
 import org.scalacheck.Prop.forAll
@@ -22,7 +23,22 @@ val startsWithHenry = forAll(henry){ (s: String) => s.startsWith("henry") }
 Test.check(Test.Parameters.default, startsWithHenry)
 ```
 
-As you can see, the result tells us that ScalaCheck is `Exhausted`, meaning it couldn't generate any samples that met our preconditions. This is the danger of using preconditions---they aren't very efficient. It's more efficient to generate only valid samples.
+The result tells us that ScalaCheck is `Exhausted`, meaning it couldn't generate any samples that met our preconditions. This is the danger of using preconditions---they aren't very efficient. It's more efficient to generate only valid samples.
+
+For the above example we could easily generate conforming strings with the following generator.
+
+```tut:silent:book:
+val henry = Gen.alphaStr.map(s => "henry" ++ s)
+```
+
+Now the test runs successfully.
+
+```tut:book:
+val startsWithHenry = forAll(henry){ (s: String) => s.startsWith("henry") }
+
+Test.check(Test.Parameters.default, startsWithHenry)
+```
+
 
 ## Implication
 
@@ -45,11 +61,87 @@ import org.scalacheck.Prop._
 forAll { (x: Int) => (x > Int.MinValue) ==> (x + -x == 0) }
 ```
 
-Although using `==>` may be aesthetically pleasing, I find I don't use it in my tests. The reason being I often find I need to construct custom generators for my tests for other reasons (e.g. efficiency) and using just this single technique keeps the code base more consistent compared to switching between implication and custom generators on a case-by-case basis.
+Although using `==>` may be aesthetically pleasing, I find I don't use it in my tests. The reason being I often find I need to construct custom generators for my tests for other reasons (e.g. efficiency, as discussed above) and using just this single technique keeps the code base more consistent compared to switching between implication and custom generators on a case-by-case basis.
 
 
+## Shrinking
 
-Shrinking and its stupidity. Turning it off.
+When ScalaCheck finds a failing property it will attempt to find a minimal example that causes it to fail, a process known as *shrinking*.
+
+Returning to our example of strings that start with "henry". Imagine we have the following generator, and are testing it with an incorrect property.
+
+```tut:silent:book:
+val henry = Gen.alphaStr.map(s => "henry" ++ s)
+val startsWithHenry = forAll(henry){ (s: String) => s.startsWith("harry") }
+```
+
+If we run this test it will, as expected, fail. I've cleaned up the output below so it is a bit easier to read.
+
+```scala
+Test.check(Test.Parameters.default, startsWithHenry)
+// res0: org.scalacheck.Test.Result =
+//  Result(Failed(List(Arg(,,3,henry,<elided>,<elided>)),Set()),0,0,Map(),34)
+```
+
+The important bit is the value `Arg(,,3,henry,<elided>,<elided>)`. The parameters to this case class tell us, in order:
+
+- there was no label attached to the property (we'll learn about labels in a moment);
+- the property failed on test data that was the empty string;
+- the test data was shrunk three times; and
+- the original test data was the string "henry".
+
+Now the important bit: notice that the shrunk test data, the empty string, is *not* a value the generator can produce! Our generator *cannot* produce the empty string---the smallest string it can create is "henry"! 
+
+ScalaCheck will happily generate invalid test data during shrinking and then report this as if it was a valid error. Shrinking is hopelessly broken and this behaviour is absolutely infuriating in complex test cases. 
+
+Luckily we can turn off shrinking. One way to avoid it is to use `Prop.forAllNoShrink` instead of `Prop.forAll`. 
+
+```tut:silent:book:
+val startsWithHenry = Prop.forAllNoShrink(henry){ (s: String) => s.startsWith("harry") }
+```
+
+```tut:book:
+Test.check(Test.Parameters.default, startsWithHenry)
+```
+
+Notice that no shrinking is done.
+
+
+Another way to disable shrinking is to create an implicit instance of `Shrink` that does nothing for the type in question---in this case `String`.
+
+```tut:silent:book:
+implicit val noShrink: Shrink[String] = Shrink.shrinkAny
+
+val startsWithHenry = forAll(henry){ (s: String) => s.startsWith("harry") }
+```
+- 
+```tut:book:
+Test.check(Test.Parameters.default, startsWithHenry)
+```
+
+Once again no shrinking is done.
+
+Working out which type is being shrunk might be difficult, so we can turn off all shrinking with this implicit.
+
+```tut:silent:book:
+implicit def noShrink: Shrink[Any] = Shrink.shrinkAny
+```
+- 
+```tut:book:
+Test.check(Test.Parameters.default, startsWithHenry)
+```
+
+Finally, we can get shrinking to work correctly by adding preconditions to any generators that restrict their output through other means.
+
+```tut:silent:book:
+val henry = Gen.alphaStr.map(s => "henry" ++ s).suchThat(_.startsWith("henry"))
+```
+
+```tut:book:
+Test.check(Test.Parameters.default, startsWithHenry)
+```
+
+I tend to use the `implicit def` option to turn off shrinking in an entire file.
 
 Labels and other stupid symbolic operators
 
