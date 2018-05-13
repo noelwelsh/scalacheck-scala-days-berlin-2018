@@ -54,3 +54,19 @@ class TodoService[F[_] : Effect, Item : Encoder](alg: TodoAlgebra.Aux[F, Item]) 
       Try(LocalDate.parse(s)).toOption
   }
 }
+
+object TodoService {
+  import cats._
+  import cats.data._
+  import org.http4s.dsl.io._
+  import org.http4s.util.CaseInsensitiveString
+
+  // TODO: doesn't actually do anything yet
+  def idempotentPosts[F[_]](service: HttpService[F]): HttpService[F] = Kleisli { req: Request[F] =>
+    if (req.method == POST && req.headers.exists(_.name == IdempotencyKeyName)) service(req) // TODO: handle key
+    else service(req)
+  }
+
+  case class IdempotencyKey(asString: String) extends AnyVal
+  val IdempotencyKeyName = CaseInsensitiveString("Idempotency-Key")
+}
