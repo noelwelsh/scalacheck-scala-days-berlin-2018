@@ -58,7 +58,8 @@ abstract class TodoSpec[Item : Encoder](name: String, alg: => TodoAlgebra.Aux[IO
 
   def newService() = new TodoService(alg).service
 
-  /** Computation that requires a `HttpService` and also logs the request and response. We keep no other state. */
+  /** Computation that requires a `HttpService` and also logs the request and response.
+    * We keep no other state (it is type `Unit`). */
   type Http4sTest[F[_], A] = ReaderWriterState[HttpService[F], Log[F], Unit, A]
 
   /** We log the request/response pairs. */
