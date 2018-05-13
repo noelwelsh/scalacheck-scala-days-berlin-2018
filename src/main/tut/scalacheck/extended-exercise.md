@@ -81,6 +81,57 @@ val get =
 get.unsafeRunSync()
 ```
 
+Alternatively you can actually run the service and interact with it via your browser or `curl`:
+
+```
+$ sbt ~todo/reStart
+... a bunch of sbt messages ...
+todo Starting io.underscore.testing.todo.TodoServer.main()
+[success] Total time: 8 s, completed May 12, 2018 6:18:20 PM
+1. Waiting for source changes... (press enter to interrupt)
+todo [main] INFO  o.h.b.c.n.NIO1SocketServerGroup - Service bound to address /0:0:0:0:0:0:0:0:8080
+todo [main] INFO  o.h.s.b.BlazeBuilder -   _   _   _        _ _
+todo [main] INFO  o.h.s.b.BlazeBuilder -  | |_| |_| |_ _ __| | | ___
+todo [main] INFO  o.h.s.b.BlazeBuilder -  | ' \  _|  _| '_ \_  _(_-<
+todo [main] INFO  o.h.s.b.BlazeBuilder -  |_||_\__|\__| .__/ |_|/__/
+todo [main] INFO  o.h.s.b.BlazeBuilder -              |_|
+todo [main] INFO  o.h.s.b.BlazeBuilder - http4s v0.18.11 on blaze v0.12.13 started at http://[0:0:0:0:0:0:0:0]:8080/
+```
+
+(The `~todo/reStart` argument to sbt reloads the server whenever the source is changed, in case you
+want to interactively develop. It uses the [`sbt-revolver`](https://github.com/spray/sbt-revolver) plugin.)
+
+Then in another terminal:
+
+```
+$ curl -v -d value=get+milk -d due=2018-05-13 http://localhost:8080/todos
+> POST /todos HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.54.0
+> Accept: */*
+> Content-Length: 29
+> Content-Type: application/x-www-form-urlencoded
+>
+
+< HTTP/1.1 201 Created
+< Location: /todos/1
+< Date: Sun, 13 May 2018 01:20:34 GMT
+< Content-Length: 0
+<
+
+$ curl -v http://localhost:8080/todos
+> GET /todos HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Date: Sun, 13 May 2018 01:21:09 GMT
+< Content-Length: 41
+<
+[{"value":"get milk","due":"2018-05-13"}]
+```
 
 ## Property: Request Validation
 
