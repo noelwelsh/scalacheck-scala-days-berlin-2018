@@ -15,7 +15,9 @@ import org.http4s.implicits._
 import org.scalacheck._
 import org.scalacheck.Prop._
 
-class TodoSpec extends Properties("TodoService") {
+class CorrectTodoSpec extends TodoSpec("Correct", new TodoAlgebra.InMemoryTodo)
+
+abstract class TodoSpec[Item : Encoder](name: String, alg: => TodoAlgebra.Aux[IO, Item]) extends Properties(s"TodoService.$name") {
 
   import TodoRequest._
 
@@ -53,7 +55,7 @@ class TodoSpec extends Properties("TodoService") {
         entity == post
     }
 
-  def newService() = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
+  def newService() = new TodoService(alg).service
 
   /** Computation that requires a `HttpService` and also logs the request and response. We keep no other state. */
   type Http4sTest[F[_], A] = ReaderWriterState[HttpService[F], Log[F], Unit, A]

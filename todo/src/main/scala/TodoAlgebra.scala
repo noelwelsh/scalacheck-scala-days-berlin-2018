@@ -12,16 +12,14 @@ trait TodoAlgebra[F[_]] {
   type Item
   type ItemId = Long
 
-  implicit def encoder: Encoder[Item]
-
   /** Construct an `Item`. */
   def item(value: String, due: Option[LocalDate]): Item
 
   /** Append an `Item` to the list. */
   def append(item: Item): F[ItemId]
 
-  /** Get all the `Item`s in the list. */
-  def getItems(): F[List[Item]]
+  /** Find all the `Item`s in the list. */
+  def findAll(): F[List[Item]]
 
   /** Find an `Item` by its `ItemId`. */
   def find(id: ItemId): F[Option[Item]]
@@ -29,13 +27,17 @@ trait TodoAlgebra[F[_]] {
 
 object TodoAlgebra {
 
+  type Aux[F[_], Item0] = TodoAlgebra[F] { type Item = Item0 }
+
   case class Item(value: String, due: Option[LocalDate])
+
+  object Item {
+    implicit def encoder: Encoder[Item] = deriveEncoder[Item]
+  }
 
   class InMemoryTodo[F[_] : Applicative] extends TodoAlgebra[F] {
 
     type Item = TodoAlgebra.Item
-
-    implicit def encoder: Encoder[Item] = deriveEncoder[Item]
 
     private var items: List[Item] = List.empty
 
@@ -48,7 +50,7 @@ object TodoAlgebra {
         items.length.toLong
       }
 
-    def getItems(): F[List[Item]] =
+    def findAll(): F[List[Item]] =
       Applicative[F].pure(items)
 
     def find(id: ItemId): F[Option[Item]] =

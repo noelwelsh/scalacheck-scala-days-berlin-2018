@@ -2,7 +2,7 @@ package io.underscore.testing.todo
 
 import cats.effect.Effect
 import cats.implicits._
-import io.circe.Json
+import io.circe._
 import io.circe.syntax._
 import java.time.LocalDate
 import org.http4s._
@@ -10,9 +10,7 @@ import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import scala.util.Try
 
-class TodoService[F[_]: Effect](alg: TodoAlgebra[F]) extends Http4sDsl[F] {
-
-  import alg._ // imports implicits we need
+class TodoService[F[_] : Effect, Item : Encoder](alg: TodoAlgebra.Aux[F, Item]) extends Http4sDsl[F] {
 
   val service: HttpService[F] = {
     HttpService[F] {
@@ -39,7 +37,7 @@ class TodoService[F[_]: Effect](alg: TodoAlgebra[F]) extends Http4sDsl[F] {
 
       case GET -> Root / "todos" =>
         for {
-          items <- alg.getItems
+          items <- alg.findAll
           response <- Ok(items.asJson)
         } yield response
 

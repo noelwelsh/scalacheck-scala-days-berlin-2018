@@ -63,7 +63,7 @@ import org.http4s.implicits._
 ```
 
 ```tut:book
-val service = new TodoService[IO](new TodoAlgebra.InMemoryTodo[IO]).service
+val service = new TodoService(new TodoAlgebra.InMemoryTodo[IO]).service
 
 val post = TodoRequest.PostTodo("get milk", Some(LocalDate.of(2018, 5, 18))).toRequest
 

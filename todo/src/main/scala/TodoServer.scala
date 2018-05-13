@@ -14,7 +14,7 @@ object TodoServer extends StreamApp[IO] {
 
 object ServerStream {
 
-  def todoService[F[_]: Effect] = new TodoService[F](new TodoAlgebra.InMemoryTodo[F]).service
+  def todoService[F[_]: Effect] = new TodoService(new TodoAlgebra.InMemoryTodo[F]).service
 
   def stream[F[_]: Effect](implicit ec: ExecutionContext) =
     BlazeBuilder[F]
