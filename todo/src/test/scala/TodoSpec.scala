@@ -48,11 +48,12 @@ abstract class TodoSpec[Item : Encoder](name: String, alg: => TodoAlgebra.Aux[IO
         } yield getResponse
 
       val (log, _, getResponse) = r.runEmpty(newService).value
-      val entity = getResponse.as[TodoRequest.PostTodo].unsafeRunSync()
+      val entity = getResponse.as[TodoRequest.PostTodo].attempt.unsafeRunSync()
 
-      Log.show(log) |:
-        getResponse.status == Status.Ok &&
-        entity == post
+      val statusIsOk = s"getResponse.status: ${getResponse.status} != ${Status.Ok}" |: getResponse.status == Status.Ok
+      val readEntityMatchesWritten = s"entity: $entity != ${Right(post)}" |: entity == Right(post)
+
+      Log.show(log) |: statusIsOk && readEntityMatchesWritten
     }
 
   def newService() = new TodoService(alg).service
