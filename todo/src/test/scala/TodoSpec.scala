@@ -17,6 +17,14 @@ import org.scalacheck.Prop._
 
 class CorrectTodoSpec extends TodoSpec("Correct", new TodoAlgebra.InMemoryTodo)
 
+// NOTE: try with different `TodoAlgebra.InMemoryTodo.Bug` values, not just all of them.
+class BuggyTodoSpec extends TodoSpec(
+  "Buggy",
+  new TodoAlgebra.InMemoryTodo.WithBugs(
+    List(TodoAlgebra.InMemoryTodo.Bug.FindReturnsWrongItem)
+    // TodoAlgebra.InMemoryTodo.Bug.values.toList
+  ))
+
 abstract class TodoSpec[Item : Encoder](name: String, alg: => TodoAlgebra.Aux[IO, Item]) extends Properties(s"TodoService.$name") {
 
   import TodoRequest._

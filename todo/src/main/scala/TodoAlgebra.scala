@@ -56,12 +56,32 @@ object TodoAlgebra {
     def find(id: ItemId): F[Option[Item]] =
       Applicative[F].pure(items.lift(id.toLong.toInt - 1))
   }
-}
 
-object Bugs {
-  class ReturnsWrongLocation[F[_] : Applicative] extends TodoAlgebra.InMemoryTodo[F] {
-    override def append(item: Item): F[ItemId] =
-      super.append(item) map (_ + 5)
+  object InMemoryTodo {
+    import enumeratum._
+
+    sealed trait Bug extends EnumEntry
+
+    object Bug extends Enum[Bug] {
+      val values = findValues
+
+      case object AppendReturnsWrongId extends Bug
+      case object FindAlwaysFails extends Bug
+      case object FindReturnsWrongItem extends Bug
+    }
+
+    class WithBugs[F[_] : Applicative](bugs: List[Bug]) extends InMemoryTodo[F] {
+
+      def chaosBug[A](a: => A)(bug: Bug, f: A => A) =
+        bugs.find(_ == bug).fold(a)(_ => f(a))
+
+      override def append(item: Item): F[ItemId] =
+        chaosBug(super.append(item))(Bug.AppendReturnsWrongId, _ map (_ + 5))
+
+      override def find(id: ItemId): F[Option[Item]] = {
+        val x = chaosBug(super.find(id))(Bug.FindReturnsWrongItem, _ map (_ map (_.copy(value = "ha ha ha!"))))
+        chaosBug(x)(Bug.FindAlwaysFails, _ => Option.empty[Item].pure[F])
+      }
+    }
   }
 }
-
