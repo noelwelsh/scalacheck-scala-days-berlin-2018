@@ -121,7 +121,7 @@ Test.check(Test.Parameters.default, startsWithHenry)
 
 Once again no shrinking is done.
 
-Working out which type is being shrunk might be difficult, so we can turn off all shrinking with this implicit.
+Working out which type is being shrunk might be difficult, so we can turn off *all* shrinking with this implicit.
 
 ```tut:silent:book:
 implicit def noShrink: Shrink[Any] = Shrink.shrinkAny
