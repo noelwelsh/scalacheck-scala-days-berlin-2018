@@ -21,7 +21,7 @@ class TodoService[F[_] : Effect, Item : Encoder](alg: TodoAlgebra.Aux[F, Item]) 
               for {
                 id <- alg.append(alg.item(value, Some(due)))
                 response <- Created(headers.Location(Uri.uri("/todos") / id.toString))
-              } yield response.putHeaders()
+              } yield response
 
             case (Some(Seq(value, _*)), None) =>
               for {
