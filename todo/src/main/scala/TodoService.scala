@@ -46,6 +46,12 @@ class TodoService[F[_] : Effect, Item : Encoder](alg: TodoAlgebra.Aux[F, Item]) 
           item <- alg.find(id)
           response <- item.fold(NotFound())(i => Ok(i.asJson))
         } yield response
+
+      case DELETE -> Root / "todos" / LongVar(id) =>
+        for {
+          _ <- alg.complete(id)
+          response <- NoContent()
+        } yield response
     }
   }
 

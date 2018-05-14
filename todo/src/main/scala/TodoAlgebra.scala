@@ -23,6 +23,9 @@ trait TodoAlgebra[F[_]] {
 
   /** Find an `Item` by its `ItemId`. */
   def find(id: ItemId): F[Option[Item]]
+
+  /** Complete an `Item` with a given `ItemId`. */
+  def complete(id: ItemId): F[Unit]
 }
 
 object TodoAlgebra {
@@ -39,22 +42,33 @@ object TodoAlgebra {
 
     type Item = TodoAlgebra.Item
 
-    private var items: List[Item] = List.empty
+    /* Non-complete items are `Some`, completed items are `None`,
+     * so we don't break the Itemid <-> List index invariant. */
+    private var items: List[Option[Item]] = List.empty
 
     def item(value: String, due: Option[LocalDate]): Item =
       Item(value, due)
 
     def append(item: Item): F[ItemId] =
       Applicative[F].pure {
-        items = items :+ item
+        items = items :+ Some(item)
         items.length.toLong
       }
 
     def findAll(): F[List[Item]] =
-      Applicative[F].pure(items)
+      Applicative[F].pure(items collect { case Some(item) => item })
 
     def find(id: ItemId): F[Option[Item]] =
-      Applicative[F].pure(items.lift(id.toLong.toInt - 1))
+      Applicative[F].pure(items.lift(id.toLong.toInt - 1).flatten)
+
+    def complete(id: ItemId): F[Unit] =
+      Applicative[F].pure {
+        val index = id.toLong.toInt - 1
+
+        if (items.isDefinedAt(index)) items = items.updated(index, None)
+
+        ()
+      }
   }
 
   object InMemoryTodo {

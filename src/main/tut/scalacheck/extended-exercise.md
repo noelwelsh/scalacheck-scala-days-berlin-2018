@@ -1,6 +1,54 @@
 # Extended Exercise: TODO web application
 
+We've created an example web application, complete with bugs, for you to test.
+It's a simple "TODO" application, where a user can add new TODO items, view
+their list of TODOs, and mark a TODO as done.
+
+## *Notes to Instructor*
+
+Outline of extended exercise:
+
+- Get familiar with TODO app behavior
+  - expected request/response of HTTP endpoints
+  - *Exercise*: execute requests in the REPL
+  - *Exercise*: run the service locally, send requests via `curl`
+  - *Exercise*: properties brainstorm
+    - what properties can you think of, based on the existing patterns (associativity, invertibility, etc.)?
+- Get familiar with the code
+  - `TodoService`: the `http4s` routes
+    - pattern match to extract requests
+    - decoding form data with `UrlForm`
+    - invoke algebra
+    - return response
+  - `TodoAlgebra`: interface for the business logic (*details useful only if students are advanced*)
+    - explain what `F[_]` is
+    - explain `TodoAlgebra.Aux`: we need this to require a `io.circe.Encoder` of the `TodoAlgebra.Item` type member
+    - `InMemoryTodo` implementation
+  - `TodoSpec`: our properties checked against an algebra
+    - Uses `TodoAlgebra.Aux[IO, Item]`: why we use `IO` as our testing effect
+    - `TodoRequest`: ADT with `toRequest: Request[IO]` method so we can write generators of requests
+    - `run` method: returns `Http4sTest` RWST monad
+      - we need to use the same `HttpService[IO]` for all requests made in a given test, since the service is stateful/mutable
+      - We record the requests and responses as a `List[Log]` in the writer part of `Http4sTest` monad, and hook the log up to properties via `|:` so failing tests can show what requests were run.
+- Mechanics of the exercise
+  - We will re-use the `TodoSpec` with different `TodoAlgebra` *instances*.
+  - The `TodoAlgebra.InMemoryTodo` is the "correct" implementation, and we will inject various bugs with other instances.
+  - New properties should be added to `TodoSpec`.
+- *Exercises*
+  - test `DELETE` endpoint using the pattern from `"read your writes"`
+  - explore injecting bugs via `TodoAlgebra.InMemoryTodo.WithBugs`: what breaks? what doesn't break?
+  - inject more bug types via `TodoAlgebra.InMemoryTodo.WithBugs`
+  - Implement and test authentication (see section below)
+  - Implement and test idempotent posts (see section below)
+  - Implement and test pagination (see section below)
+  - Implement and test filtering (see section below)
+
+
 ## Endpoints
+
+First let's understand the application's expected behavior via HTTP.
+
+We can add a new TODO item to our list:
 
 ```
 POST /todos?value=get+milk&due=2018-05-13 HTTP/1.1
@@ -9,6 +57,8 @@ Host: localhost:8080
 HTTP/1.1 201 Created
 Location: /todos/68
 ```
+
+We can get a particular item by id:
 
 ```
 GET /todos/68
@@ -23,6 +73,8 @@ Content-Type: application/json; charset=UTF-8
   "due": "2018-05-13"
 }
 ```
+
+We get all our items:
 
 ```
 GET /todos
@@ -45,11 +97,19 @@ Content-Type: application/json; charset=UTF-8
 ]
 ```
 
+We can mark an item as done (by `DELETE`ing it):
+
+```
+DELETE /todos/68
+Host: localhost:8080
+
+HTTP/1.1 204 No Content
+```
+
 Dates are [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Dates) formatted (`YYYY-MM-DD`).
 
 ### `TodoService.scala`
 
-We've created an example [http4s](https://http4s.org/) service, complete with bugs, for you to test.
 Here's an example of making requests and getting (non-buggy) responses:
 
 ```tut:silent:book
