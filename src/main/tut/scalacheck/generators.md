@@ -131,7 +131,7 @@ sample(3)(Gen.posNum[Int].filter(_ % 2 == 0))
 
 What's the difference between the two? Think about this before you read on.
 
-The first way of defining the even positive integers suffers from overflow, and can end up generating negative numbers! The second ends up filtering out half of the numbers generated from `Gen.psNum`, so it is less efficient (though correct!)
+The first way of defining the even positive integers suffers from overflow, and can end up generating negative numbers! The second ends up filtering out half of the numbers generated from `Gen.posNum`, so it is less efficient (though correct!)
 
 
 
