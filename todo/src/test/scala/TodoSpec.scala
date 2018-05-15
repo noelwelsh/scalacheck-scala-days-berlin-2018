@@ -64,6 +64,8 @@ abstract class TodoSpec[Item : Encoder](name: String, alg: => TodoAlgebra.Aux[IO
       Log.show(log) |: statusIsOk && readEntityMatchesWritten
     }
 
+  // TODO: DELETE /todos/{id}
+
   def newService() = new TodoService(alg).service
 
   /** Computation that requires a `HttpService` and also logs the request and response.
